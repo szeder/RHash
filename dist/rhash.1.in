@@ -130,6 +130,10 @@ List names of all supported hash functions, one per line.
 Recursively process directories, specified by command line.
 .IP "\-\-follow"
 Follow symbolic links when processing files or directories recursively.
+.IP "\-\-hash-symlink-data"
+When encountering a symbolic link, hash the data in the link itself, not
+the file it refers to, and even when it refers to a directory.
+Incompatible with "\-\-follow".
 .IP "\-m, \-\-message=<text>"
 Calculate message digests of the given text message.
 .IP "\-\-file\-list=<file>"

@@ -110,6 +110,7 @@ static void print_help(void)
 	print_help_line("  -v, --verbose    ", _("Be verbose.\n"));
 	print_help_line("      --brief      ", _("Use brief form of hash file verification report.\n"));
 	print_help_line("  -r, --recursive  ", _("Process directories recursively.\n"));
+	print_help_line("      --hash-symlink-data  ", _("Hash the data in the link itself.\n"));
 	print_help_line("      --file-list=<file> ", _("Process a list of files.\n"));
 	print_help_line("  -m, --message=<text> ", _("Process the text message.\n"));
 	print_help_line("      --skip-ok    ", _("Don't print OK messages for successfully verified files.\n"));
@@ -468,6 +469,7 @@ cmdline_opt_t cmdline_opt[] =
 	{ F_TFNC, 'm',   0, "message",       (opt_handler_t)add_special_file, 0, FileIsData },
 	{ F_TFNC,   0,   0, "file-list",     (opt_handler_t)add_special_file, 0, FileIsList },
 	{ F_UFLG,   0,   0, "follow",        0, &opt.flags, OPT_FOLLOW },
+	{ F_UFLG,   0,   0, "hash-symlink-data", 0, &opt.flags, OPT_HASH_SYMLINK_DATA },
 	{ F_UFLG,   0,   0, "brief",         0, &opt.flags, OPT_BRIEF },
 	{ F_UFLG,   0,   0, "gost-reverse",  0, &opt.flags, OPT_GOST_REVERSE },
 	{ F_UFLG,   0,   0, "skip-ok",       0, &opt.flags, OPT_SKIP_OK },
@@ -1142,7 +1144,8 @@ void options_destroy(struct options_t* o)
 
 enum {
 	ChkMode,
-	ChkFmt
+	ChkFmt,
+	ChkOpts
 };
 
 /**
@@ -1158,7 +1161,9 @@ static void check_compatibility(int what, unsigned bit_mask)
 		return;
 	die(what == ChkMode ?
 		_("incompatible program modes\n") :
-		_("incompatible formatting options\n"));
+		what == ChkFmt ?
+			_("incompatible formatting options\n") :
+			_("incompatible options\n"));
 }
 
 /**
@@ -1184,6 +1189,7 @@ static void make_final_options_checks(void)
 		check_compatibility(ChkMode, opt.mode);
 	check_compatibility(ChkFmt, opt.fmt);
 	check_compatibility(ChkFmt, (opt.flags & OPT_FMT_MODIFIERS) | (opt.fmt & FMT_PRINTF_MASK));
+	check_compatibility(ChkOpts, opt.flags & (OPT_FOLLOW | OPT_HASH_SYMLINK_DATA));
 
 	if (!opt.crc_accept)
 		opt.crc_accept = file_mask_new_from_list(".sfv");

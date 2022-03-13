@@ -661,8 +661,9 @@ static int fstat_path_token(struct hash_token* token, char* str, size_t str_leng
 {
 	static char buffer[LINE_BUFFER_SIZE];
 	file_t* parent_dir = &token->parser->parent_dir;
-	unsigned init_flags = (FILE_IS_IN_UTF8(token->parser->hash_file) ?
-		FileInitRunFstat | FileInitUtf8PrintPath : FileInitRunFstat);
+	unsigned init_flags = FileInitRunFstat |
+		(FILE_IS_IN_UTF8(token->parser->hash_file) ? FileInitUtf8PrintPath : 0) |
+		(opt.flags & OPT_HASH_SYMLINK_DATA ? FileInitSymlinkData : 0);
 	char* path = (bit_flags == 0 ? str : buffer);
 	size_t path_length = (bit_flags == 0 ? str_length : (bit_flags & PathUrlDecode ?
 		urldecode(buffer, LINE_BUFFER_SIZE, str, str_length) :

@@ -14,6 +14,7 @@
 #include "win_utils.h"
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -267,8 +268,8 @@ int file_init(file_t* file, ctpath_t path, unsigned init_flags)
 #endif
 		}
 	}
-	if ((init_flags & (FileInitRunFstat | FileInitRunLstat)) &&
-			file_stat(file, (init_flags & FileInitRunLstat)) < 0)
+	if ((init_flags & (FileInitRunFstat | FileInitRunLstat | FileInitSymlinkData)) &&
+			file_stat(file, (init_flags & (FileInitRunLstat | FileInitSymlinkData))) < 0)
 		return -1;
 	return 0;
 }
@@ -402,8 +403,8 @@ int file_init_by_print_path(file_t* file, file_t* prepend_dir, const char* print
 #endif
 	/* note: FileMaskUpdatePrintPath flags are used only with file_init() */
 	assert((init_flags & FileMaskUpdatePrintPath) == 0);
-	if ((init_flags & (FileInitRunFstat | FileInitRunLstat)) &&
-			file_stat(file, (init_flags & FileInitRunLstat)) < 0)
+	if ((init_flags & (FileInitRunFstat | FileInitRunLstat | FileInitSymlinkData)) &&
+			file_stat(file, (init_flags & (FileInitRunLstat | FileInitSymlinkData))) < 0)
 		return -1;
 	return 0;
 }
@@ -766,6 +767,27 @@ static int file_statw(file_t* file)
 }
 #endif
 
+static int file_symlink_data(file_t* file)
+{
+	const size_t size = PATH_MAX + 1;
+	int symlink_data_size;
+	char* symlink_data;
+
+	assert(FILE_ISLNK(file));
+
+	symlink_data = rsh_malloc(size);
+	symlink_data_size = readlink(file->real_path, symlink_data, size);
+	if (symlink_data_size == (ssize_t)size ||
+	    symlink_data_size == -1)
+		return -1;
+
+	file->data = symlink_data;
+	file->size = symlink_data_size;
+	file->mode |= FileIsData;
+
+	return 0;
+}
+
 /**
  * Retrieve file information (type, size, mtime) into file_t fields.
  *
@@ -793,6 +815,27 @@ int file_stat(file_t* file, int fstat_flags)
 #ifdef _WIN32
 	return file_statw(file);
 #else
+	if (fstat_flags & (FUseLstat | FSymlinkData)) {
+		if (lstat(file->real_path, &st) == 0) {
+			if (S_ISLNK(st.st_mode)) {
+				file->mode |= FileIsLnk; /* it's a symlink */
+				if (fstat_flags & FSymlinkData) {
+					if (file_symlink_data(file) == -1)
+						return -1;
+					file->mtime = st.st_mtime;
+					return 0;
+				}
+			}
+		}
+		else
+		{
+			if (fstat_flags & FSymlinkData) {
+				file->mode |= FileIsInaccessible;
+				return -1;
+			}
+		}
+	}
+
 	if (stat(file->real_path, &st)) {
 		file->mode |= FileIsInaccessible;
 		return -1;
@@ -807,10 +850,6 @@ int file_stat(file_t* file, int fstat_flags)
 		file->mode |= FileIsReg;
 	}
 
-	if ((fstat_flags & FUseLstat) && lstat(file->real_path, &st) == 0) {
-		if (S_ISLNK(st.st_mode))
-			file->mode |= FileIsLnk; /* it's a symlink */
-	}
 	return 0;
 #endif
 }

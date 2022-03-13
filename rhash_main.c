@@ -309,6 +309,7 @@ int main(int argc, char* argv[])
 
 	opt.search_data->options = FIND_SKIP_DIRS;
 	opt.search_data->options |= (HAS_OPTION(OPT_FOLLOW) ? FIND_FOLLOW_SYMLINKS : 0);
+	opt.search_data->options |= (HAS_OPTION(OPT_HASH_SYMLINK_DATA) ? FIND_SYMLINK_DATA : 0);
 	opt.search_data->callback = scan_files_callback;
 
 	need_sfv_banner = (rhash_data.is_sfv && IS_MODE(MODE_DEFAULT));

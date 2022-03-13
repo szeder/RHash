@@ -71,6 +71,7 @@ enum FileModeBits {
 	FileInitUpdatePrintPathLastSlash = 0x10000,
 	FileInitUpdatePrintPathSlashes = 0x20000,
 	FileInitUseRealPathAsIs = 0x40000,
+	FileInitSymlinkData = 0x80000,
 	FileMaskUpdatePrintPath = (FileInitUpdatePrintPathLastSlash | FileInitUpdatePrintPathSlashes),
 	FileMaskStatBits = (FileIsDir | FileIsLnk | FileIsReg | FileIsInaccessible),
 	FileMaskIsSpecial = (FileIsData | FileIsList | FileIsStdStream),
@@ -119,6 +120,7 @@ int file_modify_path(file_t* dst, file_t* src, const char* str, int operation);
 enum FileStatModes {
 	FNoMode    = 0,
 	FUseLstat  = FileInitRunLstat,
+	FSymlinkData = FileInitSymlinkData,
 };
 int file_stat(file_t* file, int fstat_flags);
 

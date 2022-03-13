@@ -373,7 +373,7 @@ static int dir_scan(file_t* start_dir, file_search_data* data)
 	int level = 0;
 	int max_depth = data->max_depth;
 	int options = data->options;
-	int fstat_bit = (data->options & FIND_FOLLOW_SYMLINKS ? FileInitRunFstat : FileInitRunLstat);
+	int fstat_bit = (data->options & FIND_SYMLINK_DATA ? FileInitSymlinkData : data->options & FIND_FOLLOW_SYMLINKS ? FileInitRunFstat : FileInitRunLstat);
 	file_t file;
 
 	if (max_depth < 0 || max_depth >= MAX_DIRS_DEPTH)
@@ -499,7 +499,8 @@ static int dir_scan(file_t* start_dir, file_search_data* data)
 				{
 					res = ((options & FIND_FOLLOW_SYMLINKS) || !FILE_ISLNK(&file));
 				}
-				else if (FILE_ISREG(&file))
+				else if (FILE_ISREG(&file) ||
+					 (FILE_ISLNK(&file) && (options & FIND_SYMLINK_DATA)))
 				{
 					/* handle file by callback function */
 					res = data->callback(&file, data->callback_data);
